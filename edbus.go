@@ -5,6 +5,7 @@ import (
 
 	"git.edwardh.dev/pio"
 	"git.edwardh.dev/pio/gpio"
+	"git.edwardh.dev/pio/instr"
 	"git.edwardh.dev/pio/memory"
 	"git.edwardh.dev/pio/simulation"
 	"git.edwardh.dev/pio/statemachine"
@@ -15,50 +16,32 @@ var systemClock float32 = (125 * 1000 * 1000)
 var edbusClock float32 = (48 * 1000 * 1000)
 
 var programTX = memory.NewProgramWithOrigin([]uint16{
-	0xc020, //  0: irq    wait 0
+	instr.NewPushPull(true, false, true).Encode() | instr.NewSideset(0b00).Encode(2, false),   //  0: pull   block           side 0
+	instr.NewOut(instr.OutDestinationY, 1).Encode() | instr.NewSideset(0b00).Encode(2, false), //  1: out    y, 1            side 0
+	instr.NewJump(instr.JumpYZero, 9).Encode() | instr.NewSideset(0b00).Encode(2, false),      //  2: jmp    !y, 9           side 0
+	instr.EncodeNOP() | instr.NewSideset(0b11).Encode(2, false) | instr.NewDelay(3).Encode(),  //  3: nop                    side 3 [3]
+	instr.NewJump(instr.JumpPin, 10).Encode() | instr.NewSideset(0b11).Encode(2, false),       //  4: jmp    pin, 10         side 3
+	instr.NewIRQ(false, true, 0).Encode() | instr.NewSideset(0b11).Encode(2, false),           //  5: irq    wait 0          side 3
 	//     .wrap_target
-	0x80a0, //  1: pull   block
-	0x2047, //  2: wait   0 irq, 7
-	0xf780, //  3: set    pindirs, 0      side 0 [7]
-	0xe027, //  4: set    x, 7
-	0x80e0, //  5: pull   ifempty block
-	0x6041, //  6: out    y, 1
-	0x006b, //  7: jmp    !y, 11
-	0xfa81, //  8: set    pindirs, 1      side 1 [2]
-	0x00cc, //  9: jmp    pin, 12
-	0x0000, // 10: jmp    0
-	0xfb80, // 11: set    pindirs, 0      side 1 [3]
-	0x10e6, // 12: jmp    !osre, 6        side 0
-	0x0045, // 13: jmp    x--, 5
-	0xff81, // 14: set    pindirs, 1      side 1 [7]
-	0xc021, // 15: irq    wait 1
+	instr.NewPushPull(true, false, true).Encode() | instr.NewSideset(0b11).Encode(2, false),                             //  6: pull   block           side 3
+	instr.NewWait(false, instr.WaitSourceIRQ, 7).Encode() | instr.NewSideset(0b11).Encode(2, false),                     //  7: wait   0 irq, 7        side 3
+	instr.NewJump(instr.JumpAlways, 10).Encode() | instr.NewSideset(0b01).Encode(2, false) | instr.NewDelay(7).Encode(), //  8: jmp    10              side 1 [7]
+	instr.EncodeNOP() | instr.NewSideset(0b10).Encode(2, false) | instr.NewDelay(4).Encode(),                            //  9: nop                    side 2 [4]
+	instr.NewJump(instr.JumpOSRENotEmpty, 1).Encode() | instr.NewSideset(0b00).Encode(2, false),                         // 10: jmp    !osre, 1        side 0
+	instr.NewJump(instr.JumpXNonZeroThenDecrement, 0).Encode() | instr.NewSideset(0b00).Encode(2, false),                // 11: jmp    x--, 0          side 0
+	instr.NewIRQ(false, true, 1).Encode() | instr.NewSideset(0b11).Encode(2, false) | instr.NewDelay(7).Encode(),        // 12: irq    wait 1          side 3 [7]
 	//     .wrap
 }, 0)
 
-var programTXEntryPoint uint = 1
-var programTXWrapFrom uint = 15
-var programTXWrapTo uint = 1
+var programTXEntryPoint uint = 6
+var programTXWrapFrom uint = 12
+var programTXWrapTo uint = 6
 
 var programRX = memory.NewProgramWithOrigin([]uint16{
-	//     .wrap_target
-	0xc047, //  0: irq    clear 7
-	0x2021, //  1: wait   0 pin, 1
-	0xc007, //  2: irq    nowait 7
-	0xe127, //  3: set    x, 7                   [1]
-	0x01cb, //  4: jmp    pin, 11                [1]
-	0xe05f, //  5: set    y, 31
-	0x22a1, //  6: wait   1 pin, 1               [2]
-	0x4001, //  7: in     pins, 1
-	0x0086, //  8: jmp    y--, 6
-	0x8000, //  9: push   noblock
-	0x0045, // 10: jmp    x--, 5
-	//     .wrap
-	0x23a1, // 11: wait   1 pin, 1               [3]
-	0x00c0, // 12: jmp    pin, 0
-	0x000b, // 13: jmp    11
-}, 16)
+	instr.EncodeNOP(),
+}, 15)
 
-var programRXWrapFrom uint = 10
+var programRXWrapFrom uint = 0
 var programRXWrapTo uint = 0
 
 func setupTX(r *pio.RP2040, pioNumber uint, stateMachineNumber uint, ebdPin uint, ebcPin uint) error {
@@ -86,23 +69,15 @@ func setupTX(r *pio.RP2040, pioNumber uint, stateMachineNumber uint, ebdPin uint
 	if err != nil {
 		return err
 	}
-	err = sm.SetBaseSetPin(ebdPin)
-	if err != nil {
-		return err
-	}
-	err = sm.SetPinCountSet(1)
-	if err != nil {
-		return err
-	}
 	err = sm.SetJumpPin(ebdPin)
 	if err != nil {
 		return err
 	}
-	err = sm.SetBaseSidesetPin(ebcPin)
+	err = sm.SetBaseSidesetPin(ebdPin)
 	if err != nil {
 		return err
 	}
-	err = sm.SetSideset(2, true, true)
+	err = sm.SetSideset(2, false, true)
 	if err != nil {
 		return err
 	}
@@ -181,6 +156,7 @@ func setupTX(r *pio.RP2040, pioNumber uint, stateMachineNumber uint, ebdPin uint
 	}
 
 	sm.Init(offset + programTXEntryPoint)
+	sm.ForceInstruction(instr.NewSet(instr.SetDestinationX, 7).Encode() | instr.NewSideset(0b11).Encode(2, false))
 	sm.SetEnabled(true)
 
 	return nil

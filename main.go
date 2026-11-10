@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"time"
+
+	"git.edwardh.dev/pio/instr"
 )
 
 func main() {
@@ -39,7 +41,7 @@ func main() {
 
 	for i := range 8 {
 		_, _ = smTXA, i
-		err = smTXA.FIFOTXWriter().Write(0xF0000AAA + uint32(i))
+		err = smTXA.FIFOTXWriter().Write(0xF0000000 + uint32(i))
 		if err != nil {
 			panic(err)
 		}
@@ -47,7 +49,7 @@ func main() {
 
 	for i := range 8 {
 		_, _ = smTXB, i
-		err = smTXB.FIFOTXWriter().Write(0xAAAAAAAA + uint32(i))
+		err = smTXB.FIFOTXWriter().Write(0x00000000 + uint32(i))
 		if err != nil {
 			panic(err)
 		}
@@ -61,6 +63,41 @@ func main() {
 		}
 
 		_, _ = ebcNet, ebdNet
+
+		if (pio0A.IRQs()>>0)&1 == 1 {
+			println("RP2040 A: got IRQ 'error' on tick", ticks)
+			smTXA.ClearFIFOs()
+			smTXA.ForceInstruction(instr.NewSet(instr.SetDestinationX, 7).Encode() | instr.NewSideset(0b11).Encode(2, false))
+			err := pio0A.SetIRQ(0, false)
+			if err != nil {
+				panic(err)
+			}
+		}
+		if (pio0A.IRQs()>>1)&1 == 1 {
+			println("RP2040 A: got IRQ 'done' on tick", ticks)
+			smTXA.ForceInstruction(instr.NewSet(instr.SetDestinationX, 7).Encode() | instr.NewSideset(0b11).Encode(2, false))
+			err := pio0A.SetIRQ(1, false)
+			if err != nil {
+				panic(err)
+			}
+		}
+		if (pio0B.IRQs()>>0)&1 == 1 {
+			println("RP2040 B: got IRQ 'error' on tick", ticks)
+			smTXB.ClearFIFOs()
+			smTXB.ForceInstruction(instr.NewSet(instr.SetDestinationX, 7).Encode() | instr.NewSideset(0b11).Encode(2, false))
+			err := pio0B.SetIRQ(0, false)
+			if err != nil {
+				panic(err)
+			}
+		}
+		if (pio0B.IRQs()>>1)&1 == 1 {
+			println("RP2040 B: got IRQ 'done' on tick", ticks)
+			smTXB.ForceInstruction(instr.NewSet(instr.SetDestinationX, 7).Encode() | instr.NewSideset(0b11).Encode(2, false))
+			err := pio0B.SetIRQ(1, false)
+			if err != nil {
+				panic(err)
+			}
+		}
 
 		if !smRXA.FIFORXReader().IsEmpty() {
 			v, err := smRXA.FIFORXReader().Read()
