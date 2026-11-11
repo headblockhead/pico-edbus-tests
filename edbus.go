@@ -13,9 +13,9 @@ import (
 
 var systemClock float32 = (125 * 1000 * 1000)
 
-var edbusClock float32 = (48 * 1000 * 1000)
+var edbusClock float32 = (125 * 1000 * 1000)
 
-var programTX = memory.NewProgramWithOrigin([]uint16{
+var programTX = memory.NewProgram([]uint16{
 	instr.NewPushPull(true, false, true).Encode() | instr.NewSideset(0b00).Encode(2, false),   //  0: pull   block           side 0
 	instr.NewOut(instr.OutDestinationY, 1).Encode() | instr.NewSideset(0b00).Encode(2, false), //  1: out    y, 1            side 0
 	instr.NewJump(instr.JumpYZero, 9).Encode() | instr.NewSideset(0b00).Encode(2, false),      //  2: jmp    !y, 9           side 0
@@ -31,15 +31,15 @@ var programTX = memory.NewProgramWithOrigin([]uint16{
 	instr.NewJump(instr.JumpXNonZeroThenDecrement, 0).Encode() | instr.NewSideset(0b00).Encode(2, false),                // 11: jmp    x--, 0          side 0
 	instr.NewIRQ(false, true, 1).Encode() | instr.NewSideset(0b11).Encode(2, false) | instr.NewDelay(7).Encode(),        // 12: irq    wait 1          side 3 [7]
 	//     .wrap
-}, 0)
+})
 
 var programTXEntryPoint uint = 6
 var programTXWrapFrom uint = 12
 var programTXWrapTo uint = 6
 
-var programRX = memory.NewProgramWithOrigin([]uint16{
+var programRX = memory.NewProgram([]uint16{
 	instr.EncodeNOP(),
-}, 15)
+})
 
 var programRXWrapFrom uint = 0
 var programRXWrapTo uint = 0
