@@ -7,6 +7,8 @@ import (
 	"git.edwardh.dev/pio/instr"
 )
 
+const maxLogicHistory int = 180
+
 func main() {
 	s, ebdNet, ebcNet, rA, rB, err := setupSimulation()
 	if err != nil {
@@ -42,7 +44,7 @@ func main() {
 	var logicHistoryEBD []bool = []bool{}
 	var logicHistoryEBC []bool = []bool{}
 
-	for range 5 {
+	for range 8 {
 		fmt.Println("")
 	}
 
@@ -67,11 +69,11 @@ func main() {
 		}
 
 		logicHistoryEBD = append(logicHistoryEBD, ebdNet.LogicLevel())
-		if len(logicHistoryEBD) > 100 {
+		if len(logicHistoryEBD) > maxLogicHistory {
 			logicHistoryEBD = logicHistoryEBD[1:]
 		}
 		logicHistoryEBC = append(logicHistoryEBC, ebcNet.LogicLevel())
-		if len(logicHistoryEBC) > 100 {
+		if len(logicHistoryEBC) > maxLogicHistory {
 			logicHistoryEBC = logicHistoryEBC[1:]
 		}
 
@@ -140,7 +142,7 @@ func main() {
 		}
 
 		fmt.Print("\033[60D")
-		for range 5 {
+		for range 8 {
 			fmt.Print("\033[1A")
 			fmt.Print("\033[K")
 		}
@@ -167,9 +169,10 @@ func main() {
 				dataline4 = append(dataline4, '.')
 			}
 		}
+		fmt.Print("\n Logic level EBD: \n")
 		fmt.Print(string(dataLine1) + "\n")
 		fmt.Print(string(dataLine2) + "\n")
-		fmt.Print("------------------------------------------------------\n")
+		fmt.Print("\n Logic level EBC: \n")
 		fmt.Print(string(dataline3) + "\n")
 		fmt.Print(string(dataline4) + "\n")
 
