@@ -249,12 +249,12 @@ func setupSimulation() (*simulation.Simulation, *simulation.Net, *simulation.Net
 		return nil, nil, nil, nil, nil, err
 	}
 
-	ebdNet := simulation.NewNet("EBD")
+	ebd := simulation.NewNet("EBD")
 	ebdConA, err := rA.Connection(6)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
-	err = ebdNet.Connect(ebdConA)
+	err = ebd.Connect(ebdConA)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
@@ -262,21 +262,21 @@ func setupSimulation() (*simulation.Simulation, *simulation.Net, *simulation.Net
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
-	err = ebdNet.Connect(ebdConB)
+	err = ebd.Connect(ebdConB)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
-	err = s.AddNet(ebdNet)
+	err = s.AddNet(ebd)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
 
-	ebcNet := simulation.NewNet("EBC")
+	ebc := simulation.NewNet("EBC")
 	ebcConA, err := rA.Connection(7)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
-	err = ebcNet.Connect(ebcConA)
+	err = ebc.Connect(ebcConA)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
@@ -284,14 +284,14 @@ func setupSimulation() (*simulation.Simulation, *simulation.Net, *simulation.Net
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
-	err = ebcNet.Connect(ebcConB)
+	err = ebc.Connect(ebcConB)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
-	err = s.AddNet(ebcNet)
+	err = s.AddNet(ebc)
 	if err != nil {
 		return nil, nil, nil, nil, nil, err
 	}
 
-	return s, ebdNet, ebcNet, rA, rB, nil
+	return s, ebd, ebc, rA, rB, nil
 }

@@ -10,7 +10,7 @@ import (
 const maxLogicHistory int = 180
 
 func main() {
-	s, ebdNet, ebcNet, rA, rB, err := setupSimulation()
+	s, ebd, ebc, rA, rB, err := setupSimulation()
 	if err != nil {
 		panic(err)
 	}
@@ -68,11 +68,11 @@ func main() {
 			}
 		}
 
-		logicHistoryEBD = append(logicHistoryEBD, ebdNet.LogicLevel())
+		logicHistoryEBD = append(logicHistoryEBD, ebd.LogicLevel())
 		if len(logicHistoryEBD) > maxLogicHistory {
 			logicHistoryEBD = logicHistoryEBD[1:]
 		}
-		logicHistoryEBC = append(logicHistoryEBC, ebcNet.LogicLevel())
+		logicHistoryEBC = append(logicHistoryEBC, ebc.LogicLevel())
 		if len(logicHistoryEBC) > maxLogicHistory {
 			logicHistoryEBC = logicHistoryEBC[1:]
 		}
@@ -82,7 +82,7 @@ func main() {
 			panic(err)
 		}
 
-		_, _ = ebcNet, ebdNet
+		_, _ = ebc, ebd
 
 		if (pio0A.IRQs()>>0)&1 == 1 {
 			//println("RP2040 A: got IRQ 'error' on tick", ticks)
