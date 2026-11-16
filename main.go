@@ -95,8 +95,6 @@ func main() {
 		}
 		if (pio0A.IRQs()>>1)&1 == 1 {
 			//println("RP2040 A: got IRQ 'done' on tick", ticks)
-			smTXA.ForceInstruction(instr.NewSet(instr.SetDestinationX, 7).Encode() | instr.NewSideset(0b11).Encode(2, false))
-			err := pio0A.SetIRQ(1, false)
 			if err != nil {
 				panic(err)
 			}

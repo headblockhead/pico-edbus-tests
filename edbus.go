@@ -7,6 +7,7 @@ import (
 	"git.edwardh.dev/pio/gpio"
 	"git.edwardh.dev/pio/instr"
 	"git.edwardh.dev/pio/memory"
+	"git.edwardh.dev/pio/pioblock"
 	"git.edwardh.dev/pio/simulation"
 	"git.edwardh.dev/pio/statemachine"
 )
@@ -44,12 +45,18 @@ var programRX = memory.NewProgram([]uint16{
 var programRXWrapFrom uint = 0
 var programRXWrapTo uint = 0
 
-func setupTX(r *pio.RP2040, pioNumber uint, stateMachineNumber uint, ebdPin uint, ebcPin uint) error {
-	if ebdPin+1 != ebcPin {
+var ebdPinNum uint = 6
+var ebcPinNum uint = 7
+var edbusPIONum uint = 0
+var txSMNum uint = 0
+var rxSMNum uint = 1
+
+func setupTX(r *pio.RP2040) error {
+	if ebdPinNum+1 != ebcPinNum {
 		return errors.New("ebd+1 != ebc")
 	}
 
-	pio, err := r.PIO(pioNumber)
+	pio, err := r.PIO(edbusPIONum)
 	if err != nil {
 		return err
 	}
@@ -60,7 +67,7 @@ func setupTX(r *pio.RP2040, pioNumber uint, stateMachineNumber uint, ebdPin uint
 		return err
 	}
 
-	sm, err := pio.StateMachine(stateMachineNumber)
+	sm, err := pio.StateMachine(txSMNum)
 	if err != nil {
 		return err
 	}
@@ -69,11 +76,11 @@ func setupTX(r *pio.RP2040, pioNumber uint, stateMachineNumber uint, ebdPin uint
 	if err != nil {
 		return err
 	}
-	err = sm.SetJumpPin(ebdPin)
+	err = sm.SetJumpPin(ebdPinNum)
 	if err != nil {
 		return err
 	}
-	err = sm.SetBaseSidesetPin(ebdPin)
+	err = sm.SetBaseSidesetPin(ebdPinNum)
 	if err != nil {
 		return err
 	}
@@ -94,25 +101,25 @@ func setupTX(r *pio.RP2040, pioNumber uint, stateMachineNumber uint, ebdPin uint
 		return err
 	}
 
-	err = pio.SetPinOutput(ebdPin, true)
+	err = pio.SetPinOutput(ebdPinNum, true)
 	if err != nil {
 		return err
 	}
-	err = pio.SetPinOutputEnable(ebdPin, true)
+	err = pio.SetPinOutputEnable(ebdPinNum, true)
 	if err != nil {
 		return err
 	}
-	err = pio.SetPinOutput(ebcPin, true)
+	err = pio.SetPinOutput(ebcPinNum, true)
 	if err != nil {
 		return err
 	}
-	err = pio.SetPinOutputEnable(ebcPin, true)
+	err = pio.SetPinOutputEnable(ebcPinNum, true)
 	if err != nil {
 		return err
 	}
 
 	var gpioFunction gpio.Function
-	switch pioNumber {
+	switch edbusPIONum {
 	case 0:
 		gpioFunction = gpio.FunctionPIO0
 	case 1:
@@ -120,19 +127,19 @@ func setupTX(r *pio.RP2040, pioNumber uint, stateMachineNumber uint, ebdPin uint
 	default:
 		return errors.New("unknown pio")
 	}
-	ebdG, err := r.GPIO(ebdPin)
+	ebdG, err := r.GPIO(ebdPinNum)
 	if err != nil {
 		return err
 	}
-	ebdP, err := r.Pad(ebdPin)
+	ebdP, err := r.Pad(ebdPinNum)
 	if err != nil {
 		return err
 	}
-	ebcG, err := r.GPIO(ebcPin)
+	ebcG, err := r.GPIO(ebcPinNum)
 	if err != nil {
 		return err
 	}
-	ebcP, err := r.Pad(ebcPin)
+	ebcP, err := r.Pad(ebcPinNum)
 	if err != nil {
 		return err
 	}
@@ -146,11 +153,11 @@ func setupTX(r *pio.RP2040, pioNumber uint, stateMachineNumber uint, ebdPin uint
 	ebcP.SetPullDown(false)
 	ebcP.SetPullUp(true)
 
-	err = pio.SetPinOutput(ebdPin, false)
+	err = pio.SetPinOutput(ebdPinNum, false)
 	if err != nil {
 		return err
 	}
-	err = pio.SetPinOutput(ebcPin, false)
+	err = pio.SetPinOutput(ebcPinNum, false)
 	if err != nil {
 		return err
 	}
@@ -162,12 +169,12 @@ func setupTX(r *pio.RP2040, pioNumber uint, stateMachineNumber uint, ebdPin uint
 	return nil
 }
 
-func setupRX(r *pio.RP2040, pioNumber uint, stateMachineNumber uint, ebdPin uint, ebcPin uint) error {
-	if ebdPin+1 != ebcPin {
+func setupRX(r *pio.RP2040) error {
+	if ebdPinNum+1 != ebcPinNum {
 		return errors.New("ebd+1 != ebc")
 	}
 
-	pio, err := r.PIO(pioNumber)
+	pio, err := r.PIO(edbusPIONum)
 	if err != nil {
 		return err
 	}
@@ -178,7 +185,7 @@ func setupRX(r *pio.RP2040, pioNumber uint, stateMachineNumber uint, ebdPin uint
 		return err
 	}
 
-	sm, err := pio.StateMachine(stateMachineNumber)
+	sm, err := pio.StateMachine(rxSMNum)
 	if err != nil {
 		return err
 	}
@@ -187,11 +194,11 @@ func setupRX(r *pio.RP2040, pioNumber uint, stateMachineNumber uint, ebdPin uint
 	if err != nil {
 		return err
 	}
-	err = sm.SetBaseInPin(ebdPin)
+	err = sm.SetBaseInPin(ebdPinNum)
 	if err != nil {
 		return err
 	}
-	err = sm.SetJumpPin(ebcPin)
+	err = sm.SetJumpPin(ebcPinNum)
 	if err != nil {
 		return err
 	}
@@ -217,11 +224,11 @@ func setupRX(r *pio.RP2040, pioNumber uint, stateMachineNumber uint, ebdPin uint
 func newEDBUSRP2040(label string) (*pio.RP2040, error) {
 	r := pio.NewRP2040(label)
 
-	err := setupTX(r, 0, 0, 6, 7)
+	err := setupTX(r)
 	if err != nil {
 		return nil, err
 	}
-	err = setupRX(r, 0, 1, 6, 7)
+	err = setupRX(r)
 	if err != nil {
 		return nil, err
 	}
@@ -229,69 +236,90 @@ func newEDBUSRP2040(label string) (*pio.RP2040, error) {
 	return r, nil
 }
 
-func setupSimulation() (*simulation.Simulation, *simulation.Net, *simulation.Net, *pio.RP2040, *pio.RP2040, error) {
-	s := simulation.New()
+type edbusSetupRP2040 struct {
+	r    *pio.RP2040
+	pio  *pioblock.PIOBlock
+	smTX *statemachine.StateMachine
+	smRX *statemachine.StateMachine
+}
 
-	rA, err := newEDBUSRP2040("A")
-	if err != nil {
-		return nil, nil, nil, nil, nil, err
-	}
-	err = s.AddTicker(rA)
-	if err != nil {
-		return nil, nil, nil, nil, nil, err
-	}
-	rB, err := newEDBUSRP2040("B")
-	if err != nil {
-		return nil, nil, nil, nil, nil, err
-	}
-	err = s.AddTicker(rB)
-	if err != nil {
-		return nil, nil, nil, nil, nil, err
-	}
+type edbusSetup struct {
+	sim *simulation.Simulation
 
-	ebd := simulation.NewNet("EBD")
-	ebdConA, err := rA.Connection(6)
+	ebd *simulation.Net
+	ebc *simulation.Net
+
+	nodes []edbusSetupRP2040
+}
+
+func setupSimulation() (edbusSetup, error) {
+	var err error
+	setup := edbusSetup{}
+
+	setup.sim = simulation.New()
+
+	setup.ebd = simulation.NewNet("EBD")
+	err = setup.sim.AddNet(setup.ebd)
 	if err != nil {
-		return nil, nil, nil, nil, nil, err
-	}
-	err = ebd.Connect(ebdConA)
-	if err != nil {
-		return nil, nil, nil, nil, nil, err
-	}
-	ebdConB, err := rB.Connection(6)
-	if err != nil {
-		return nil, nil, nil, nil, nil, err
-	}
-	err = ebd.Connect(ebdConB)
-	if err != nil {
-		return nil, nil, nil, nil, nil, err
-	}
-	err = s.AddNet(ebd)
-	if err != nil {
-		return nil, nil, nil, nil, nil, err
+		return setup, err
 	}
 
-	ebc := simulation.NewNet("EBC")
-	ebcConA, err := rA.Connection(7)
+	setup.ebc = simulation.NewNet("EBC")
+	err = setup.sim.AddNet(setup.ebc)
 	if err != nil {
-		return nil, nil, nil, nil, nil, err
-	}
-	err = ebc.Connect(ebcConA)
-	if err != nil {
-		return nil, nil, nil, nil, nil, err
-	}
-	ebcConB, err := rB.Connection(7)
-	if err != nil {
-		return nil, nil, nil, nil, nil, err
-	}
-	err = ebc.Connect(ebcConB)
-	if err != nil {
-		return nil, nil, nil, nil, nil, err
-	}
-	err = s.AddNet(ebc)
-	if err != nil {
-		return nil, nil, nil, nil, nil, err
+		return setup, err
 	}
 
-	return s, ebd, ebc, rA, rB, nil
+	for _, l := range []string{"A", "B", "C", "D", "E"} {
+		node := edbusSetupRP2040{}
+
+		node.r, err = newEDBUSRP2040(l)
+		if err != nil {
+			return setup, err
+		}
+		err = setup.sim.AddTicker(node.r)
+		if err != nil {
+			return setup, err
+		}
+		node.pio, err = node.r.PIO(edbusPIONum)
+		if err != nil {
+			return setup, err
+		}
+		node.smTX, err = node.pio.StateMachine(txSMNum)
+		if err != nil {
+			return setup, err
+		}
+		node.smRX, err = node.pio.StateMachine(rxSMNum)
+		if err != nil {
+			return setup, err
+		}
+
+		ebdCon, err := node.r.Connection(ebdPinNum)
+		if err != nil {
+			return setup, err
+		}
+		err = setup.ebd.Connect(ebdCon)
+		if err != nil {
+			return setup, err
+		}
+		ebcCon, err := node.r.Connection(ebcPinNum)
+		if err != nil {
+			return setup, err
+		}
+		err = setup.ebc.Connect(ebcCon)
+		if err != nil {
+			return setup, err
+		}
+	}
+
+	return setup, nil
+}
+
+func onDoneIRQ(smTX *statemachine.StateMachine) {
+	smTX.ForceInstruction(instr.NewSet(instr.SetDestinationX, 7).Encode() | instr.NewSideset(0b11).Encode(2, false))
+}
+
+func onErrorIRQ(smTX *statemachine.StateMachine) {
+	smTX.ClearFIFOs()
+	smTX.ForceInstruction(instr.NewSet(instr.SetDestinationX, 7).Encode() | instr.NewSideset(0b11).Encode(2, false))
 }
