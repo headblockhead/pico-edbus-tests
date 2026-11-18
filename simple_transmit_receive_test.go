@@ -11,6 +11,9 @@ func TestSimpleTransmitReceive(t *testing.T) {
 	nodeA := setup.nodes[0]
 
 	aTXWriter := nodeA.smTX.FIFOTXWriter()
-	// TODO
-	aTXWriter.Write()
+	err = aTXWriter.Write(0x0AF0BEEF)
+	if err != nil {
+		t.Fatalf("Failed to write to TX FIFO: %v", err)
+	}
+
 }
