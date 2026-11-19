@@ -39,10 +39,17 @@ var programTXWrapFrom uint = 12
 var programTXWrapTo uint = 6
 
 var programRX = memory.NewProgram([]uint16{
-	instr.EncodeNOP(),
+	//		 .wrap_target
+	instr.NewWait(false, instr.WaitSourcePin, 1).Encode(), // 0: wait 0 pin 1
+	instr.NewJump(instr.JumpPin, 2).Encode(),              // 1: jmp pin 2
+	//		 .wrap
+	instr.NewIRQ(false, false, 7).Encode(),               // 2: irq nowait 7
+	instr.NewWait(true, instr.WaitSourcePin, 1).Encode(), // 3: wait 1 pin 1
+	instr.NewIn(instr.InSourcePins, 1).Encode(),          // 4: in pins, 1
+	instr.NewJump(instr.JumpAlways, 3).Encode(),          // 5: jmp 3
 })
 
-var programRXWrapFrom uint = 0
+var programRXWrapFrom uint = 1
 var programRXWrapTo uint = 0
 
 var ebdPinNum uint = 6
@@ -210,7 +217,7 @@ func setupRX(r *pio.RP2040) error {
 	if err != nil {
 		return err
 	}
-	err = sm.SetInShift(false, false, 32)
+	err = sm.SetInShift(false, true, 32)
 	if err != nil {
 		return err
 	}
@@ -310,6 +317,8 @@ func setupSimulation() (edbusSetup, error) {
 		if err != nil {
 			return setup, err
 		}
+
+		setup.nodes = append(setup.nodes, node)
 	}
 
 	return setup, nil
