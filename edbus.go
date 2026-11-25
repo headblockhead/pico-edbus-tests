@@ -40,16 +40,23 @@ var programTXWrapTo uint = 6
 
 var programRX = memory.NewProgram([]uint16{
 	//		 .wrap_target
-	instr.NewWait(false, instr.WaitSourcePin, 1).Encode(), // 0: wait 0 pin 1
-	instr.NewJump(instr.JumpPin, 2).Encode(),              // 1: jmp pin 2
+	instr.NewIRQ(true, false, 7).Encode(),                                             // 0: irq    clear 7
+	instr.NewWait(false, instr.WaitSourcePin, 1).Encode(),                             // 1: wait   0 pin, 1
+	instr.NewSet(instr.SetDestinationX, 7).Encode() | instr.NewDelay(1).Encode(),      // 2: set    x, 7             [1]
+	instr.NewJump(instr.JumpPin, 11).Encode() | instr.NewDelay(1).Encode(),            // 3: jmp    pin, 11          [1]
+	instr.NewSet(instr.SetDestinationY, 31).Encode(),                                  // 4: set    y, 31
+	instr.NewWait(true, instr.WaitSourcePin, 1).Encode() | instr.NewDelay(2).Encode(), // 5: wait   1 pin, 1         [2]
+	instr.NewIn(instr.InSourcePins, 1).Encode(),                                       // 6: in     pins, 1
+	instr.NewJump(instr.JumpYNonZeroThenDecrement, 5).Encode(),                        // 7: jmp    y--, 5
+	instr.NewPushPull(false, false, false).Encode(),                                   // 8: push   noblock
+	instr.NewJump(instr.JumpXNonZeroThenDecrement, 5).Encode(),                        // 9: jmp    x--, 5
 	//		 .wrap
-	instr.NewIRQ(false, false, 7).Encode(),               // 2: irq nowait 7
-	instr.NewWait(true, instr.WaitSourcePin, 1).Encode(), // 3: wait 1 pin 1
-	instr.NewIn(instr.InSourcePins, 1).Encode(),          // 4: in pins, 1
-	instr.NewJump(instr.JumpAlways, 3).Encode(),          // 5: jmp 3
+	instr.NewWait(true, instr.WaitSourcePin, 1).Encode() | instr.NewDelay(3).Encode(), // 10: wait   1 pin, 1        [3]
+	instr.NewJump(instr.JumpPin, 0).Encode(),                                          // 11: jmp    pin, 0
+	instr.NewJump(instr.JumpAlways, 10).Encode(),                                      // 12: jmp    10
 })
 
-var programRXWrapFrom uint = 1
+var programRXWrapFrom uint = 2
 var programRXWrapTo uint = 0
 
 var ebdPinNum uint = 6
