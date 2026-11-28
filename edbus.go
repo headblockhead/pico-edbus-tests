@@ -24,13 +24,13 @@ var programTX = memory.NewProgram([]uint16{
 	instr.NewJump(instr.JumpPin, 10).Encode() | instr.NewSideset(0b11).Encode(2, false),       //  4: jmp    pin, 10         side 3
 	instr.NewIRQ(false, true, 0).Encode() | instr.NewSideset(0b11).Encode(2, false),           //  5: irq    wait 0          side 3
 	//     .wrap_target
-	instr.NewPushPull(true, false, true).Encode() | instr.NewSideset(0b11).Encode(2, false),                             //  6: pull   block           side 3
-	instr.NewWait(false, instr.WaitSourceIRQ, 7).Encode() | instr.NewSideset(0b11).Encode(2, false),                     //  7: wait   0 irq, 7        side 3
-	instr.NewJump(instr.JumpAlways, 10).Encode() | instr.NewSideset(0b01).Encode(2, false) | instr.NewDelay(7).Encode(), //  8: jmp    10              side 1 [7]
-	instr.EncodeNOP() | instr.NewSideset(0b10).Encode(2, false) | instr.NewDelay(4).Encode(),                            //  9: nop                    side 2 [4]
-	instr.NewJump(instr.JumpOSRENotEmpty, 1).Encode() | instr.NewSideset(0b00).Encode(2, false),                         // 10: jmp    !osre, 1        side 0
-	instr.NewJump(instr.JumpXNonZeroThenDecrement, 0).Encode() | instr.NewSideset(0b00).Encode(2, false),                // 11: jmp    x--, 0          side 0
-	instr.NewIRQ(false, true, 1).Encode() | instr.NewSideset(0b11).Encode(2, false) | instr.NewDelay(7).Encode(),        // 12: irq    wait 1          side 3 [7]
+	instr.NewPushPull(true, false, true).Encode() | instr.NewSideset(0b11).Encode(2, false),                                           //  6: pull   block           side 3
+	instr.NewWait(false, instr.WaitSourceIRQ, 7).Encode() | instr.NewSideset(0b11).Encode(2, false),                                   //  7: wait   0 irq, 7        side 3
+	instr.NewJump(instr.JumpAlways, 10).Encode() | instr.NewSideset(0b01).Encode(2, false) | instr.NewDelay(7).Encode(),               //  8: jmp    10              side 1 [7]
+	instr.EncodeNOP() | instr.NewSideset(0b10).Encode(2, false) | instr.NewDelay(4).Encode(),                                          //  9: nop                    side 2 [4]
+	instr.NewJump(instr.JumpOSRENotEmpty, 1).Encode() | instr.NewSideset(0b00).Encode(2, false),                                       // 10: jmp    !osre, 1        side 0
+	instr.NewJump(instr.JumpXNonZeroThenDecrement, 0).Encode() | instr.NewSideset(0b00).Encode(2, false) | instr.NewDelay(1).Encode(), // 11: jmp    x--, 0          side 0 [1]
+	instr.NewIRQ(false, true, 1).Encode() | instr.NewSideset(0b11).Encode(2, false) | instr.NewDelay(7).Encode(),                      // 12: irq    wait 1          side 3 [7]
 	//     .wrap
 })
 
